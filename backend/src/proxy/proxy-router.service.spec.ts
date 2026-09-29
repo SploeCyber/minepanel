@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
+import { normalizeBasePath } from 'src/config';
 import { HostContextService } from 'src/common/docker/host-context.service';
 import { InstanceSettingsService } from 'src/settings/instance-settings.service';
 import { ProxyRouterService } from './proxy-router.service';
@@ -144,6 +145,22 @@ describe('ProxyRouterService', () => {
       );
 
       await prefixed.generateComposeFile();
+      const compose = yaml.load(lastWrittenCompose()) as any;
+
+      expect(compose.services['mc-router'].environment.AUTO_SCALE_WEBHOOK_URL).toBe(
+        'http://backend:8091/panel-api/servers/autoscale',
+      );
+    });
+
+    // The prefix is normalized in config.ts before it reaches this URL, so the router and
+    // setGlobalPrefix cannot disagree when the operator leaves the slash out.
+    it('builds the webhook URL from a normalized prefix when BASE_PATH has no leading slash', async () => {
+      const unprefixed = await build([], { basePath: normalizeBasePath('panel-api') });
+      instanceSettings.getRouterSettings.mockResolvedValue(
+        routerSettings({ autoScaleEnabled: true, autoScaleToken: 'secret' }),
+      );
+
+      await unprefixed.generateComposeFile();
       const compose = yaml.load(lastWrittenCompose()) as any;
 
       expect(compose.services['mc-router'].environment.AUTO_SCALE_WEBHOOK_URL).toBe(

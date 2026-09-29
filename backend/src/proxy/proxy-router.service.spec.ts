@@ -136,8 +136,6 @@ describe('ProxyRouterService', () => {
       expect(environment.AUTO_SCALE_DOWN_AFTER).toBe('10m');
     });
 
-    // BASE_PATH moves every Nest route behind a global prefix, so a webhook without it
-    // 404s and the router can never wake a sleeping server.
     it('keeps the global prefix in the webhook URL when BASE_PATH is set', async () => {
       const prefixed = await build([], { basePath: '/panel-api', backendPort: '8091' });
       instanceSettings.getRouterSettings.mockResolvedValue(
@@ -152,8 +150,6 @@ describe('ProxyRouterService', () => {
       );
     });
 
-    // The prefix is normalized in config.ts before it reaches this URL, so the router and
-    // setGlobalPrefix cannot disagree when the operator leaves the slash out.
     it('builds the webhook URL from a normalized prefix when BASE_PATH has no leading slash', async () => {
       const unprefixed = await build([], { basePath: normalizeBasePath('panel-api') });
       instanceSettings.getRouterSettings.mockResolvedValue(
